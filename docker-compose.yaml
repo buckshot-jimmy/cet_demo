@@ -1,0 +1,36 @@
+version: '3.9'
+
+services:
+  app:
+    build:
+      context: .
+    container_name: cet_app
+    user: "1001:1001"
+    restart: unless-stopped
+    ports:
+      - "8089:80"
+    volumes:
+      - /home/ubuntu/cet_test:/var/www/html
+    depends_on:
+      - db
+    environment:
+      APP_ENV: prod
+      DATABASE_URL: "mysql://symfony:symfony@cet_mysql:3306/cet_test?serverVersion=8.0"
+    working_dir: /var/www/html
+
+  db:
+    image: mysql:8.0
+    container_name: cet_mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: cet_test
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_USER: symfony
+      MYSQL_PASSWORD: symfony
+    ports:
+      - "3307:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+
+volumes:
+  mysql_data:
