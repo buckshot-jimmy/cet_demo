@@ -2,7 +2,6 @@
 
 namespace App\Tests\Validator;
 
-use App\DTO\PacientDTO;
 use App\Entity\Pacient;
 use App\Repository\PacientRepository;
 use App\Validator\PacientConstraints;
@@ -13,7 +12,7 @@ use Symfony\Component\Validator\Test\ConstraintValidatorTestCase;
 class PacientConstraintsValidatorTest extends ConstraintValidatorTestCase
 {
     private $repo;
-    private $dto;
+    private $pacient;
 
     /**
      * @covers \App\Validator\PacientConstraintsValidator::__construct
@@ -32,11 +31,10 @@ class PacientConstraintsValidatorTest extends ConstraintValidatorTestCase
             ->getMock();
         $em->method('getRepository')->willReturn($this->repo);
 
-        $this->dto = new PacientDTO(1, 'n', 'p', '1790630060774', '0745545689' ,
-            '', 'ciprianmarta.cm@gmail.com', 'a', 'Alba', 'Baciu', 'Romania',
-            'M', '30-06-1979', 'l', 'o', '2026-01-01', false,
-            'o', 1, 1, [], []
-        );
+        $this->pacient = new Pacient();
+        $this->pacient->setId(1);
+        $this->pacient->setCnp('1212232354589');
+        $this->pacient->setTara('Romania');
 
         return new PacientConstraintsValidator($em);
     }
@@ -77,17 +75,11 @@ class PacientConstraintsValidatorTest extends ConstraintValidatorTestCase
      */
     public function testValidCnpUnicSameCnpDoesNotAddViolation()
     {
-        $pacient = $this->createMock(Pacient::class);
-        $this->repo->method('findOneBy')->willReturn($pacient);
-        $pacient->method('getCnp')->willReturn('1212232354589');
-        $pacient->method('getId')->willReturn(1);
-        $this->dto->id = 1;
-        $this->dto->cnp = '1212232354589';
-        $this->dto->tara = 'Romania';
+        $this->repo->method('findOneBy')->willReturn($this->pacient);
 
         $constraint = new PacientConstraints();
 
-        $this->validator->validate($this->dto, $constraint);
+        $this->validator->validate($this->pacient, $constraint);
 
         $this->assertNoViolation();
     }
@@ -101,9 +93,9 @@ class PacientConstraintsValidatorTest extends ConstraintValidatorTestCase
     {
         $constraint = new PacientConstraints();
 
-        $this->dto->cnp = $cnp;
-        $this->dto->tara = $tara;
-        $this->validator->validate($this->dto, $constraint);
+        $this->pacient->setCnp($cnp);
+        $this->pacient->setTara($tara);
+        $this->validator->validate($this->pacient, $constraint);
 
         $this->buildViolation($constraint->messages['cnp'])->assertRaised();
     }
@@ -117,9 +109,9 @@ class PacientConstraintsValidatorTest extends ConstraintValidatorTestCase
     {
         $constraint = new PacientConstraints();
 
-        $this->dto->cnp = $cnp;
-        $this->dto->tara = $tara;
-        $this->validator->validate($this->dto, $constraint);
+        $this->pacient->setCnp($cnp);
+        $this->pacient->setTara($tara);
+        $this->validator->validate($this->pacient, $constraint);
 
         $this->assertNoViolation();
     }

@@ -38,7 +38,7 @@ class FixturesEntityFactoryTest extends TestCase
     public function testEnsureEntityUsesExistingEntity()
     {
         $manager = $this->createMock(ObjectManager::class);
-        $repo = $this->createMock(\Doctrine\Persistence\ObjectRepository::class);
+        $repo = $this->createMock(ObjectRepository::class);
 
         $entity = new DummyEntity();
         $entity->setName('Existing');
