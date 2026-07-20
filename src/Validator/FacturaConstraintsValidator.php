@@ -17,7 +17,7 @@ class FacturaConstraintsValidator extends ConstraintValidator
         $this->noClient($value, $constraint);
     }
 
-    private function noClient($value, $constraint)
+    private function noClient($value, $constraint): bool
     {
         if (!$value->getPacient() && !$value->getClientPj()) {
             $this->context->buildViolation($constraint->messages['noClient'])->addViolation();
@@ -27,7 +27,7 @@ class FacturaConstraintsValidator extends ConstraintValidator
         return true;
     }
 
-    private function facturaUnica($value, $constraint)
+    private function facturaUnica($value, $constraint): bool
     {
         $factura = $this->em->getRepository(Factura::class)
             ->findOneBy([
