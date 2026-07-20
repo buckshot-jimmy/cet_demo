@@ -56,7 +56,7 @@ class SecurityController extends AbstractController
     }
 
     #[Route('/admin', name: 'admin')]
-    public function dashboard(NomenclatoareService $service)
+    public function dashboard(NomenclatoareService $service): Response
     {
         $nomenclatoareMed = $this->adminService->getNomenclatoareMedicale();
         $userData = $this->adminService->getLoggedUserData($this->getUser());
