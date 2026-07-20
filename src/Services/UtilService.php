@@ -4,7 +4,7 @@ namespace App\Services;
 
 class UtilService
 {
-    public static function calculeazaDatePacient($cnp)
+    public static function calculeazaDatePacient($cnp): array
     {
         $azi = new \DateTime();
         $sex = (int)$cnp[0];
@@ -38,7 +38,7 @@ class UtilService
         ];
     }
 
-    public static function getDateFirma()
+    public static function getDateFirma(): array
     {
         return [
             'denumire' => 'MIND RESET',
