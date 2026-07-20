@@ -43,7 +43,7 @@ class ConsultatieRepository extends ServiceEntityRepository
         parent::__construct($registry, Consultatie::class);
     }
 
-    public function getAllConsultatiiByFilter($filter)
+    public function getAllConsultatiiByFilter($filter): array
     {
         $query = $this->createQueryBuilder('consultatii')
             ->select('consultatii.id', 'medic.nume AS numeMedic', 'medic.prenume AS prenumeMedic',
@@ -81,7 +81,7 @@ class ConsultatieRepository extends ServiceEntityRepository
         ];
     }
 
-    private function getTotalConsultatiiByFilter($filter)
+    private function getTotalConsultatiiByFilter($filter): int
     {
         $totalQuery = $this->createQueryBuilder('consultatii')
             ->select('COUNT(consultatii.id) AS totalPreturi')
@@ -96,7 +96,7 @@ class ConsultatieRepository extends ServiceEntityRepository
         return $totalQuery->getQuery()->getSingleScalarResult();
     }
 
-    public function saveConsultatie($dto)
+    public function saveConsultatie($dto): int
     {
         $consultatie = $this->em->getRepository(Consultatie::class)->find($dto->id);
 
@@ -132,7 +132,7 @@ class ConsultatieRepository extends ServiceEntityRepository
         return $consultatie->getId();
     }
 
-    public function saveInvestigatie($dto)
+    public function saveInvestigatie($dto): int
     {
         $investigatie = $this->em->getRepository(Consultatie::class)->find($dto->id);
 
@@ -163,7 +163,7 @@ class ConsultatieRepository extends ServiceEntityRepository
         return $investigatie->getId();
     }
 
-    public function saveEvaluarePsihologica($dto)
+    public function saveEvaluarePsihologica($dto): int
     {
         $evalPsiho = $this->em->getRepository(Consultatie::class)->find($dto->id);
 
@@ -244,7 +244,7 @@ class ConsultatieRepository extends ServiceEntityRepository
         return $consultatie[0] ?? [];
     }
 
-    public function getIstoricPacient($pacientId, $tipServiciu)
+    public function getIstoricPacient($pacientId, $tipServiciu): array
     {
         $query = $this->createQueryBuilder('consultatii')
             ->select('consultatii.id', 'medic.nume', 'medic.prenume', 'serviciu.tip AS tipServiciu',
@@ -284,7 +284,7 @@ class ConsultatieRepository extends ServiceEntityRepository
         return $istoric;
     }
 
-    public function getIstoricConsultatiiPentruFisa($pacient, $medic, $tipServiciu)
+    public function getIstoricConsultatiiPentruFisa($pacient, $medic, $tipServiciu): array
     {
         $query = $this->createQueryBuilder('consultatii')
             ->select('consultatii.id', "DATE_FORMAT(consultatii.dataConsultatie, '%d-%m-%Y') AS dataConsultatie",
@@ -332,7 +332,7 @@ class ConsultatieRepository extends ServiceEntityRepository
         return $istoric;
     }
 
-    public function deschideStergeConsultatii($pacientId, $programareId, $serviciiPreturi, $dataPrezentare)
+    public function deschideStergeConsultatii($pacientId, $programareId, $serviciiPreturi, $dataPrezentare): array
     {
         $serviciiExistente  = $this->getServiciiPacient(
             ['pacientId' => $pacientId, 'incasata' => self::NEINCASATA, 'dataPrezentare' => $dataPrezentare]
@@ -410,7 +410,7 @@ class ConsultatieRepository extends ServiceEntityRepository
         ];
     }
 
-    public function getServiciiPacient($filter)
+    public function getServiciiPacient($filter): array
     {
         $params = [
             ':stearsa' => false,
@@ -476,7 +476,7 @@ class ConsultatieRepository extends ServiceEntityRepository
         }
     }
 
-    public function calculeazaPlataColaborator($formData)
+    public function calculeazaPlataColaborator($formData): float
     {
         $query = $this->createQueryBuilder('consultatii')
             ->select('SUM(consultatii.tarif) AS totalPlata')
@@ -511,7 +511,7 @@ class ConsultatieRepository extends ServiceEntityRepository
         return $totalDePlata;
     }
 
-    public function getConsultatiiRaportColaborator($raportColaborator, $platita = null)
+    public function getConsultatiiRaportColaborator($raportColaborator, $platita = null): array
     {
         $params = [
             ':medicId' => $raportColaborator->getMedic()->getId(),
@@ -553,7 +553,7 @@ class ConsultatieRepository extends ServiceEntityRepository
         return $consultatii;
     }
 
-    public function inchideDeschide($id)
+    public function inchideDeschide($id): int
     {
         $consInv = $this->em->getRepository(Consultatie::class)->find($id);
 
@@ -569,7 +569,7 @@ class ConsultatieRepository extends ServiceEntityRepository
         return $id;
     }
 
-    public function valoareServicii($filter)
+    public function valoareServicii($filter): int
     {
         $query = $this->createQueryBuilder('consultatii')
             ->select('SUM(consultatii.tarif) AS valoare',
@@ -617,7 +617,7 @@ class ConsultatieRepository extends ServiceEntityRepository
         return $sumaNumarLuna;
     }
 
-    public function numarConsultatiiPeLuni($filter)
+    public function numarConsultatiiPeLuni($filter): array
     {
         $query = $this->createQueryBuilder('consultatii')
             ->select('COUNT (DISTINCT consultatii.id) AS totalConsultatiiLuna')
@@ -655,7 +655,7 @@ class ConsultatieRepository extends ServiceEntityRepository
         return null === $consLuna[0] ? 0 : $consLuna[0];
     }
 
-    public function getNrPacientiConsultatiDeMedic($medicId)
+    public function getNrPacientiConsultatiDeMedic($medicId): int
     {
         try {
             return $this->createQueryBuilder('consultatii')
@@ -672,7 +672,7 @@ class ConsultatieRepository extends ServiceEntityRepository
         }
     }
 
-    public function getNrServiciiPrestateMedic($medicId)
+    public function getNrServiciiPrestateMedic($medicId): int
     {
         try {
             return $this->createQueryBuilder('consultatii')
@@ -688,7 +688,7 @@ class ConsultatieRepository extends ServiceEntityRepository
         }
     }
 
-    public function inchideToateConsInvPacient($pacientId)
+    public function inchideToateConsInvPacient($pacientId): bool
     {
         $query = $this->createQueryBuilder('consultatii')
             ->update(Consultatie::class, 'consultatii')
@@ -722,7 +722,7 @@ class ConsultatieRepository extends ServiceEntityRepository
         }
     }
 
-    public function ownerAreConsultatiiDeschise($ownerId)
+    public function ownerAreConsultatiiDeschise($ownerId): int
     {
         $query =  $this->createQueryBuilder('consultatii')
             ->select('COUNT(consultatii.id)')
@@ -744,7 +744,7 @@ class ConsultatieRepository extends ServiceEntityRepository
         return $areConsultatiiDeschise > 0;
     }
 
-    public function getConsultatiiNefacturatePacient($id)
+    public function getConsultatiiNefacturatePacient($id): array
     {
         $query = $this->createQueryBuilder('consultatii');
         $query->select('DISTINCT consultatii.id',
@@ -780,7 +780,7 @@ class ConsultatieRepository extends ServiceEntityRepository
         return $consultatiiNefacturate;
     }
 
-    private function applyFilters($query, $filter)
+    private function applyFilters($query, $filter): QueryBuilder
     {
         $parameters = [];
         $conditions = $query->expr()->andX();
@@ -824,7 +824,7 @@ class ConsultatieRepository extends ServiceEntityRepository
         return $query;
     }
 
-    private function buildSort($sort, $query)
+    private function buildSort($sort, $query): QueryBuilder
     {
         switch ($sort['column']) {
             case self::COL_NR_INREG:
