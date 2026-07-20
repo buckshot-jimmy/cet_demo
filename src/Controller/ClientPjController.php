@@ -29,7 +29,7 @@ class ClientPjController extends AbstractController
     }
 
     #[Route('/clienti_pj', name: 'clienti_pj', methods: ['GET'])]
-    public function clientiPj()
+    public function clientiPj(): Response
     {
         if (!$this->authorizationChecker->isGranted('VIEW', new PersoanaJuridica())) {
             throw new AccessDeniedException();
