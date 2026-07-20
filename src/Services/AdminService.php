@@ -22,7 +22,7 @@ class AdminService
         private TranslatorInterface $translator
     ) {}
 
-    public function getNomenclatoareMedicale()
+    public function getNomenclatoareMedicale(): array
     {
         try {
             $roluri = $this->em->getRepository(Role::class)->getAllRoles();
@@ -39,7 +39,7 @@ class AdminService
         ];
     }
 
-    public function getLoggedUserData(UserInterface $loggedUser)
+    public function getLoggedUserData(UserInterface $loggedUser): array
     {
         $userData = [
             'id' => $loggedUser->getId(),
@@ -81,7 +81,7 @@ class AdminService
         return $valoareServicii;
     }
 
-    public function getTotaluriPacienti(array $userData)
+    public function getTotaluriPacienti(array $userData): array
     {
         $valoriCabinet = [
             'nrTotalPacienti' => $this->em->getRepository(Pacient::class)->count([]),
@@ -103,7 +103,7 @@ class AdminService
         }
     }
 
-    public function setSessionInfo(SessionInterface $session, $params = [])
+    public function setSessionInfo(SessionInterface $session, $params = []): SessionInterface
     {
         foreach ($params as $name => $value) {
             $session->set($name, $value);
@@ -112,7 +112,7 @@ class AdminService
         return $session;
     }
 
-    public function buildValidationErrors($errors)
+    public function buildValidationErrors($errors): string
     {
         $messages = '';
 
