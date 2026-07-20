@@ -36,7 +36,7 @@ class ConsultatieController extends AbstractController
     ) {}
 
     #[Route("/consultatii", name: "consultatii", methods: ["GET"])]
-    public function consultatii()
+    public function consultatii(): Response
     {
         if (!$this->authorizationChecker->isGranted('VIEW', new Consultatie())) {
             throw new AccessDeniedException();
@@ -81,7 +81,7 @@ class ConsultatieController extends AbstractController
     }
 
     #[Route("/consultatii_curente_cabinet", name: "consultatii_curente_cabinet", methods: ["GET"])]
-    public function cabinet()
+    public function cabinet(): Response
     {
         if (!$this->authorizationChecker->isGranted('VIEW', new Consultatie())) {
             throw new AccessDeniedException();
