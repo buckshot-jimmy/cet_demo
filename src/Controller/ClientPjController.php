@@ -25,8 +25,7 @@ class ClientPjController extends AbstractController
         private TranslatorInterface $translator,
         private AdminService $adminService,
         private AuthorizationCheckerInterface $authorizationChecker,
-    ) {
-    }
+    ) {}
 
     #[Route('/clienti_pj', name: 'clienti_pj', methods: ['GET'])]
     public function clientiPj(): Response
