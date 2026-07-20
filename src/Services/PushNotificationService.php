@@ -9,7 +9,7 @@ class PushNotificationService
 {
     public function __construct(private HubInterface $mercureHub) {}
 
-    public function pushNotificationToMercure($event)
+    public function pushNotificationToMercure($event): string
     {
         try {
             $update = new Update($event);
