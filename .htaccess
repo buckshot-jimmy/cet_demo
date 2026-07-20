@@ -1,7 +1,0 @@
-# no more .htaccess because I switched to PHP-FPM instead of PHP as an Apache2 module
-
-#<IfModule mod_rewrite.c>
-#    RewriteEngine on
-#    RewriteBase /
-#    RewriteRule ^(.*)$ public/$1 [R=301,L]
-#</IfModule>
