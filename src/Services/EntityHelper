@@ -1,0 +1,34 @@
+<?php
+
+namespace App\Services;
+
+use App\Entity\MedicTrimitator;
+use App\Entity\Owner;
+use App\Entity\Serviciu;
+use App\Entity\User;
+use Doctrine\ORM\EntityManagerInterface;
+
+class EntityHelper
+{
+    public function __construct(private EntityManagerInterface $em) {}
+
+    public function getAllServices(): array
+    {
+        return $this->em->getRepository(Serviciu::class)->getAllServicii();
+    }
+
+    public function getAllDoctors(): array
+    {
+        return $this->em->getRepository(User::class)->getAllMedici();
+    }
+
+    public function getAllOwners(): array
+    {
+        return $this->em->getRepository(Owner::class)->getAllOwners();
+    }
+
+    public function getAllSendingDoctors(): array
+    {
+        return $this->em->getRepository(MedicTrimitator::class)->findAll();
+    }
+}
