@@ -12,6 +12,9 @@ use App\Entity\Serviciu;
 use App\Entity\User;
 use App\PDF\Service\PdfService;
 use App\Services\ConsultatieService;
+use App\Services\FilterBuilder;
+use App\Services\EntityHelper;
+use App\Services\ResponseHelper;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -28,17 +31,27 @@ class ConsultatieController extends AbstractController
     const ROL_MEDIC = 'ROLE_Medic';
     const ROL_PSIHOLOG = 'ROLE_Psiholog';
 
+    const VIEW = 'VIEW';
+    const ADD_EDIT = 'ADD_EDIT';
+    const DELETE = 'DELETE';
+
     public function __construct(
-        private EntityManagerInterface        $em,
-        private TranslatorInterface           $translator,
-        private ConsultatieService            $consultatiiService,
-        private AuthorizationCheckerInterface $authorizationChecker
+        private ConsultatieService            $consultationService,
+        private AuthorizationCheckerInterface $authorizationChecker,
+        private ResponseHelper                $responseHelper,
+        private EntityHelper                  $entityHelper,
+        private FilterBuilder                 $filterBuilder,
     ) {}
 
     #[Route("/consultatii", name: "consultatii", methods: ["GET"])]
-    public function consultatii(): Response
+
+    #[IsGratned('VIEW', subject: ....)] // THIS DOES NOT WORK SINCE THERE IS NO CONSULTATION PARAMETER IN THE CONTROLLER ACTION !!! SAME FOR THE OTHER METHODS BECAUSE I SEND THE ID VIA AJAX CALL, NOT AS URL PARAMETER
+    #[IsGratned('VIEW', subject: ....)] // THIS DOES NOT WORK SINCE THERE IS NO CONSULTATION PARAMETER IN THE CONTROLLER ACTION !!! SAME FOR THE OTHER METHODS BECAUSE I SEND THE ID VIA AJAX CALL, NOT AS URL PARAMETER
+    #[IsGratned('VIEW', subject: ....)] // THIS DOES NOT WORK SINCE THERE IS NO CONSULTATION PARAMETER IN THE CONTROLLER ACTION !!! SAME FOR THE OTHER METHODS BECAUSE I SEND THE ID VIA AJAX CALL, NOT AS URL PARAMETER
+    
+    public function consultatii()
     {
-        if (!$this->authorizationChecker->isGranted('VIEW', new Consultatie())) {
+        if (!$this->authorizationChecker->isGranted(self::VIEW, new Consultatie())) {
             throw new AccessDeniedException();
         }
 
@@ -48,32 +61,26 @@ class ConsultatieController extends AbstractController
     #[Route("/list_consultatii_curente_cabinet", name: "list_consultatii_curente_cabinet", methods: ["GET"])]
     public function listConsultatiiCurenteCabinet(Request $request) : JsonResponse
     {
-        if (!$this->authorizationChecker->isGranted('VIEW', new Consultatie())) {
+        if (!$this->authorizationChecker->isGranted(self::VIEW, new Consultatie())) {
             throw new AccessDeniedException();
         }
 
-        $filter = array_merge(
-            $request->query->all('search'),
+        $filter = $this->filterBuilder->buildFilter(
+            $request,
             [
-                'sort' => ($request->query->all('order'))[0] ?? null,
-                'start' => $request->query->get('start'),
-                'length' => $request->query->get('length')
-            ],
-            ['propertyFilters' => [
                 0 => ['consultatii' => ['incasata' => false]],
-                1 => ['consultatii' => ['stearsa' => false]]]
-            ]
-        );
+                1 => ['consultatii' => ['stearsa' => false]]
+            ]);
 
         $loggedUser = $this->getUser();
 
         if (in_array($loggedUser->getRole()->getDenumire(), [self::ROL_MEDIC, self::ROL_PSIHOLOG])) {
             $filter['propertyFilters'][] = ['pret' => ['medic' => $loggedUser->getId()]];
         }
+        
+        $consultatii = $this->consultationService->getAllConsultationsByFilter($filter);
 
-        $consultatii = $this->em->getRepository(Consultatie::class)->getAllConsultatiiByFilter($filter);
-
-        return new JsonResponse([
+        return $this->responseHelper->success([
             'data' => $consultatii['consultatii'],
             'recordsTotal' => intval($consultatii['total']),
             'recordsFiltered' => intval($consultatii['total'])
@@ -81,9 +88,9 @@ class ConsultatieController extends AbstractController
     }
 
     #[Route("/consultatii_curente_cabinet", name: "consultatii_curente_cabinet", methods: ["GET"])]
-    public function cabinet(): Response
+    public function cabinet()
     {
-        if (!$this->authorizationChecker->isGranted('VIEW', new Consultatie())) {
+        if (!$this->authorizationChecker->isGranted(self::VIEW, new Consultatie())) {
             throw new AccessDeniedException();
         }
 
@@ -99,28 +106,24 @@ class ConsultatieController extends AbstractController
     #[Route("/sterge_consultatie", name: "sterge_consultatie", methods: ["POST"])]
     public function stergeConsultatie(Request $request) : JsonResponse
     {
-        if (!$this->authorizationChecker->isGranted('DELETE', new Consultatie())) {
+        if (!$this->authorizationChecker->isGranted(self::DELETE, new Consultatie())) {
             throw new AccessDeniedException();
         }
 
-        $this->em->getRepository(Consultatie::class)->deleteConsultatie($request->request->get('id'));
+        $this->consultationService->deleteConsultation($request->request->get('id'));
 
-        return new JsonResponse([
-            "status" => Response::HTTP_OK,
-            "message" => $this->translator->trans("Successful operation")
-        ], Response::HTTP_OK);
+        return $this->responseHelper->success();
     }
 
     #[Route("/get_consultatie_investigatie_eval", name: "get_consultatie_investigatie_eval", methods: ["GET"])]
     public function getConsultatieInvestigatieEvaluare(Request $request) : Response
     {
-        $data = $this->em->getRepository(Consultatie::class)
-            ->getConsultatieInvestigatieEvaluare($request->query->get('id'));
+        $data = $this->consultationService->getConsultationInvestigationEvaluation($request->query->get('id'));
 
-        $servicii = $this->em->getRepository(Serviciu::class)->getAllServicii();
-        $medici = $this->em->getRepository(User::class)->getAllMedici();
-        $owners = $this->em->getRepository(Owner::class)->getAllOwners();
-        $mediciTrimitatori = $this->em->getRepository(MedicTrimitator::class)->findAll();
+        $services = $this->entityHelper->getAllServices();
+        $doctors = $this->entityHelper->getAllDoctors();
+        $owners = $this->entityHelper->getAllOwners();
+        $sendingDoctors = $this->entityHelper->getAllSendingDoctors();
 
         $template = match ($data['tipServiciu']) {
             0 => 'consultatie_content.html.twig',
@@ -134,10 +137,10 @@ class ConsultatieController extends AbstractController
 
         return $this->render('@templates/consultatii/' . $template, [
             'data' => $data,
-            'servicii' => $servicii,
-            'medici' => $medici,
+            'servicii' => $services,
+            'medici' => $doctors,
             'owners' => $owners['owners'],
-            'mediciTrimitatori' => $mediciTrimitatori,
+            'mediciTrimitatori' => $sendingDoctors,
         ]);
     }
 
@@ -148,17 +151,14 @@ class ConsultatieController extends AbstractController
     ) : JsonResponse
     {
         if (!$this->authorizationChecker->isGranted(
-            'ADD_EDIT',
-            $this->em->getRepository(Consultatie::class)->findOneBy(['id' => $request->request->get('id')]))) {
+            self::ADD_EDIT,
+            $this->consultationService->findOneConsultationById($request->request->get('id')))) {
             throw new AccessDeniedException();
         }
 
-        $this->em->getRepository(Consultatie::class)->saveConsultatie($dto);
+        $this->consultationService->saveConsultation($dto);
 
-        return new JsonResponse([
-            "status" => Response::HTTP_OK,
-            "message" => $this->translator->trans("Successful operation")
-        ]);
+        return $this->responseHelper->success();
     }
 
     #[Route("/edit_investigatie", name: "edit_investigatie", methods: ["POST"])]
@@ -168,17 +168,14 @@ class ConsultatieController extends AbstractController
     ) : JsonResponse
     {
         if (!$this->authorizationChecker->isGranted(
-            'ADD_EDIT',
-            $this->em->getRepository(Consultatie::class)->findOneBy(['id' => $request->request->get('id')]))) {
+            self::ADD_EDIT,
+            $this->consultationService->findOneConsultationById($request->request->get('id')))) {
             throw new AccessDeniedException();
         }
 
-        $this->em->getRepository(Consultatie::class)->saveInvestigatie($dto);
+        $this->consultationService->saveInvestigation($dto);
 
-        return new JsonResponse([
-            "status" => Response::HTTP_OK,
-            "message" => $this->translator->trans("Successful operation")
-        ]);
+        return $this->responseHelper->success();
     }
 
     #[Route("/edit_eval_psiho", name: "edit_eval_psiho", methods: ["POST"])]
@@ -188,32 +185,25 @@ class ConsultatieController extends AbstractController
     ) : JsonResponse
     {
         if (!$this->authorizationChecker->isGranted(
-            'ADD_EDIT',
-            $this->em->getRepository(Consultatie::class)->findOneBy(['id' => $request->request->get('id')]))) {
+            self::ADD_EDIT,
+            $this->consultationService->findOneConsultationById($request->request->get('id')))) {
             throw new AccessDeniedException();
         }
 
-        $this->em->getRepository(Consultatie::class)->saveEvaluarePsihologica($dto);
+        $this->consultationService->savePsihoEvaluation($dto);
 
-        return new JsonResponse([
-            "status" => Response::HTTP_OK,
-            "message" => $this->translator->trans("Successful operation")
-        ]);
+        return $this->responseHelper->success();
     }
 
     #[Route("/get_istoric_pacient", name: "get_istoric_pacient", methods: ["POST"])]
     public function getIstoricPacient(Request $request) : JsonResponse
     {
-        $pacientId = $request->query->get('pacient_id');
-        $tipServiciu = $request->query->get('tip_serviciu');
+        $patientId = $request->query->get('pacient_id');
+        $serviceType = $request->query->get('tip_serviciu');
 
-        $istoric = $this->em->getRepository(Consultatie::class)->getIstoricPacient($pacientId, $tipServiciu);
+        $history = $this->consultationService->getPatientHistory($patientId, $serviceType);
 
-        return new JsonResponse([
-            "istoric" => $istoric,
-            "status" => Response::HTTP_OK,
-            "message" => $this->translator->trans("Successful operation")
-        ]);
+        return $this->responseHelper->success(['istoric' => $history]);
     }
 
     #[Route("/pdf_servicii_formulare", name: "pdf_servicii_formulare", methods: ["POST"])]
@@ -232,10 +222,7 @@ class ConsultatieController extends AbstractController
             ]
         );
 
-        return new JsonResponse([
-            Response::HTTP_OK,
-            $this->translator->trans("Successful operation")
-        ]);
+        return $this->responseHelper->success();
     }
 
     #[Route("/inchide_deschide", name: "inchide_deschide", methods: ["POST"])]
@@ -244,29 +231,24 @@ class ConsultatieController extends AbstractController
         $id = $request->request->get('id');
 
         if (!$this->authorizationChecker->isGranted(
-            'ADD_EDIT',
-            $this->em->getRepository(Consultatie::class)->findOneBy(['id' => $id]))) {
+            self::ADD_EDIT,
+            $this->consultationService->findOneConsultationById($id))) {
             throw new AccessDeniedException();
         }
 
-        $this->em->getRepository(Consultatie::class)->inchideDeschide($id);
+        $this->consultationService->openCloseConsultation($id);
 
-        return new JsonResponse([
-            "status" => Response::HTTP_OK,
-            "message" => $this->translator->trans("Successful operation")
-        ]);
+        return $this->responseHelper->success();
     }
 
     #[Route("get_consultatii_luni", name: "get_consultatii_luni", methods: ["GET"])]
     public function getConsultatiiPeLuni(): JsonResponse
     {
-        $calcule = $this->consultatiiService->calculeazaConsultatiiPeLuni($this->getUser());
+        $calculation = $this->consultationService->calculateRevenueByMonth($this->getUser());
 
-        return new JsonResponse([
-            "status" => Response::HTTP_OK,
-            "message" => $this->translator->trans("Successful operation"),
-            'consultatii' => $calcule['consultatii'],
-            'consultatiiMedic' => $calcule['consultatiiMedic'],
+        return $this->responseHelper->success([
+            'consultatii' => $calculation['consultatii'],
+            'consultatiiMedic' => $calculation['consultatiiMedic'],
             'medic' => $this->getUser()->getNume() . " " . $this->getUser()->getPrenume()
         ]);
     }
@@ -274,12 +256,10 @@ class ConsultatieController extends AbstractController
     #[Route("get_incasari_medici_luni", name: "get_incasari_medici_luni", methods: ["GET"])]
     public function getIncasariMedicPeLuni(): JsonResponse
     {
-        $incasariMedic = $this->consultatiiService->calculeazaIncasariMedicPeLuni($this->getUser()->getId());
+        $doctorRevenue = $this->consultationService->calculateRevenueDoctorByMonth($this->getUser()->getId());
 
-        return new JsonResponse([
-            "status" => Response::HTTP_OK,
-            "message" => $this->translator->trans("Successful operation"),
-            'incasariMedic' => $incasariMedic,
+        return $this->responseHelper->success([
+            'incasariMedic' => $doctorRevenue,
             'medic' => $this->getUser()->getNume() . " " . $this->getUser()->getPrenume()
         ]);
     }
