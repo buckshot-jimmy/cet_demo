@@ -1,0 +1,102 @@
+<?php
+
+namespace App\Services;
+
+use App\DTO\ConsultatieDTO;
+use App\Entity\Consultatie;
+use Doctrine\ORM\EntityManagerInterface;
+
+class ConsultatieService
+{
+    public function __construct(private EntityManagerInterface $em, private NomenclatoareService $service) {}
+
+    public function getAllConsultationsByFilter(array $filter = []): array
+    {
+        return $this->em->getRepository(Consultatie::class)->getAllConsultatiiByFilter($filter);
+    }
+
+    public function deleteConsultation(string $id): void
+    {
+        $this->em->getRepository(Consultatie::class)->deleteConsultatie($id);
+    }
+
+    public function getConsultationInvestigationEvaluation(string $id): array
+    {
+        return $this->em->getRepository(Consultatie::class)->getConsultatieInvestigatieEvaluare($id);
+    }
+
+    public function saveConsultation(ConsultatieDTO $dto)
+    {
+        $this->em->getRepository(Consultatie::class)->saveConsultatie($dto);
+    }
+
+    public function saveInvestigation(ConsultatieDTO $dto)
+    {
+        $this->em->getRepository(Consultatie::class)->saveInvestigatie($dto);
+    }
+
+    public function savePsihoEvaluation(ConsultatieDTO $dto)
+    {
+        $this->em->getRepository(Consultatie::class)->saveEvaluarePsihologica($dto);
+    }
+
+    public function getPatientHistory($patientId, $serviceType): array
+    {
+        return $this->em->getRepository(Consultatie::class)->getIstoricPacient($patientId, $serviceType);
+    }
+
+    public function findOneConsultationById(string $id): Consultatie
+    {
+        return $this->em->getRepository(Consultatie::class)->findOneBy(['id' => $id]);
+    }
+
+    public function openCloseConsultation(string $id)
+    {
+        $this->em->getRepository(Consultatie::class)->inchideDeschide($id);
+    }
+
+    public function calculateRevenueByMonth($user)
+    {
+        $consultatii = ['luni' => [], 'consultatii' => []];
+        $consultatiiMedic = ['luni' => [], 'consultatii' => []];
+        $filter = ['an' => date('Y')];
+        $luni = $this->service->getLunileAnului();
+        $repo = $this->em->getRepository(Consultatie::class);
+
+        for ($luna = 1; $luna <= date('m'); $luna++) {
+            $filter['luna'] = $luna;
+            $consultatiiData = $repo->numarConsultatiiPeLuni($filter);
+            $consultatii['luni'][] = $luni[$luna];
+            $consultatii['consultatii'][] = $consultatiiData['totalConsultatiiLuna'] ?? 0;
+
+            $filter['medic'] = $user->getId();
+            $consultatiiMedic['luni'][] = $luni[$luna];
+            $consultatiiMedicData = $repo->numarConsultatiiPeLuni($filter);
+            $consultatiiMedic['consultatii'][] = $consultatiiMedicData['totalConsultatiiLuna'] ?? 0;
+            unset($filter['medic']);
+        }
+
+        return ['consultatii' => $consultatii, 'consultatiiMedic' => $consultatiiMedic];
+    }
+
+    public function calculateRevenueDoctorByMonth($userId)
+    {
+        $repo = $this->em->getRepository(Consultatie::class);
+        $luni = $this->service->getLunileAnului();
+
+        $incasariMedic = [];
+        $filter = ['an' => date('Y'), 'medic' => $userId];
+
+        for ($luna = 1; $luna <= date('m'); $luna++) {
+            $filter['luna'] = $luna;
+            $incasariMedic['luni'][] = $luni[$luna];
+
+            $incasariMedicData = $repo->valoareServicii($filter)[0] ?? ['valoare' => '0', 'comision' => '0'];
+
+            $incasariMedic['incasari'][] = $incasariMedicData['valoare'] ?? 0;
+            $incasariMedic['comision'][] = $incasariMedicData ['comision'] ?? 0;
+        }
+
+        return $incasariMedic;
+    }
+}
