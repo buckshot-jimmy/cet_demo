@@ -1,0 +1,23 @@
+<?php
+
+namespace App\Services;
+
+use Symfony\Component\HttpFoundation\Request;
+
+class FilterBuilder
+{
+    public function buildFilter(Request $request, array $property): array
+    {
+        return array_merge(
+            $request->query->all('search'),
+            [
+                'sort' => ($request->query->all('order'))[0] ?? null,
+                'start' => $request->query->get('start'),
+                'length' => $request->query->get('length')
+            ],
+            [
+                'propertyFilters' => $property
+            ]
+        );
+    }
+}
