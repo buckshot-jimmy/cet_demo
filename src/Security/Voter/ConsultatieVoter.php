@@ -29,10 +29,6 @@ class ConsultatieVoter extends Voter
 
         $rol = $user->getRole()->getDenumire();
 
-        if ($rol === 'ROLE_Test') {
-            return false;
-        }
-
         switch ($attribute) {
             case 'DELETE':
                 return $rol === self::ROL_ADMIN;
