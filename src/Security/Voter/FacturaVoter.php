@@ -24,10 +24,6 @@ class FacturaVoter extends Voter
 
         $rol = $user->getRole()->getDenumire();
 
-        if ($rol === 'ROLE_Test') {
-            return false;
-        }
-
         switch ($attribute) {
             case 'ADD':
             case 'VIEW':
